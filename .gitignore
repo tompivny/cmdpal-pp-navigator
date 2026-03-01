@@ -40,6 +40,7 @@ ScaffoldingReadMe.txt
 ~$*
 *~
 CodeCoverage/
+command-palette-development/
 
 # MSBuild Binary and Structured Log
 *.binlog
