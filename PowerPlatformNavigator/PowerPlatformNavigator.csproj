@@ -9,9 +9,14 @@
     <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
     <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
     <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <CsWinRTWindowsMetadata
+      Condition="'$(CsWinRTWindowsMetadata)' == ''
+                 and !Exists('$(WindowsSdkDir)UnionMetadata\$(TargetPlatformVersion)\Windows.winmd')
+                 and Exists('$(NuGetPackageRoot)microsoft.windows.sdk.net.ref\$(WindowsSdkPackageVersion)\winmd\Windows.Foundation.FoundationContract.winmd')">$(NuGetPackageRoot)microsoft.windows.sdk.net.ref\$(WindowsSdkPackageVersion)\winmd</CsWinRTWindowsMetadata>
 
     <PublishProfile>win-$(Platform).pubxml</PublishProfile>
-    <EnableMsixTooling>true</EnableMsixTooling>
+    <EnableMsixTooling>false</EnableMsixTooling>
+    <AppxGeneratePriEnabled>false</AppxGeneratePriEnabled>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
@@ -43,7 +48,7 @@
     <PackageReference Include="Shmuelie.WinRTServer" />
 
     <!-- Needed to enable building an MSIX package -->
-    <PackageReference Include="Microsoft.Windows.SDK.BuildTools.MSIX">
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools.MSIX" Condition="'$(EnableMsixTooling)'=='true'">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
