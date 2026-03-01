@@ -22,7 +22,6 @@ env:
 
 jobs:
   update-winget:
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.release.tag_name, format('{0}-v', env.EXTENSION_NAME))
     runs-on: windows-latest
     permissions:
       contents: read
@@ -35,10 +34,10 @@ jobs:
         id: release
         shell: pwsh
         run: |
-          if ("${{ github.event_name }}" -eq "workflow_dispatch" -and "${{ inputs.version }}" -ne "") {
-            $version = "${{ inputs.version }}"
-            if ("${{ inputs.release_tag }}" -ne "") {
-              $tag = "${{ inputs.release_tag }}"
+          if ("${{ github.event_name }}" -eq "workflow_dispatch" -and "${{ github.event.inputs.version }}" -ne "") {
+            $version = "${{ github.event.inputs.version }}"
+            if ("${{ github.event.inputs.release_tag }}" -ne "") {
+              $tag = "${{ github.event.inputs.release_tag }}"
             } else {
               $tag = "${{ env.EXTENSION_NAME }}-v$version"
             }
