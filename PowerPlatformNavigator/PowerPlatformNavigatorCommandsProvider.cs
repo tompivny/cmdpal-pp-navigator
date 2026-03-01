@@ -14,7 +14,7 @@ public partial class PowerPlatformNavigatorCommandsProvider : CommandProvider
     public PowerPlatformNavigatorCommandsProvider()
     {
         DisplayName = "Power Platform Navigator";
-        Icon = IconHelpers.FromRelativePath("Assets\\StoreLogo.png");
+        Icon = IconHelpers.FromRelativePath("Assets\\PowerPlatformLogo.png");
         _commands = [
             new CommandItem(new PowerPlatformNavigatorPage()) { Title = DisplayName },
         ];

@@ -25,7 +25,7 @@ internal sealed partial class PowerPlatformNavigatorPage : ListPage
 
     public PowerPlatformNavigatorPage()
     {
-        Icon = IconHelpers.FromRelativePath("Assets\\StoreLogo.png");
+        Icon = IconHelpers.FromRelativePath("Assets\\PowerPlatformLogo.png");
         Title = "Power Platform Navigator";
         Name = "Open";
         PlaceholderText = "Search environments";
