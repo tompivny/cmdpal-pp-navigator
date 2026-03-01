@@ -1,0 +1,107 @@
+name: CmdPal Extension - Build EXE Installer
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version number (leave empty to auto-detect)
+        required: false
+        type: string
+      release_notes:
+        description: What is new in this version
+        required: false
+        default: New release with latest updates and improvements.
+        type: string
+
+env:
+  DISPLAY_NAME: ${{ vars.DISPLAY_NAME || 'Power Platform Navigator' }}
+  EXTENSION_NAME: ${{ vars.EXTENSION_NAME || 'PowerPlatformNavigator' }}
+  FOLDER_NAME: ${{ vars.FOLDER_NAME || 'PowerPlatformNavigator' }}
+  GH_REPO_URL: ${{ vars.GH_REPO_URL || 'https://github.com/tompivny/cmdpal-pp-navigator' }}
+
+jobs:
+  build:
+    runs-on: windows-2022
+    permissions:
+      contents: write
+      actions: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup -y --no-progress
+
+      - name: Get version
+        id: version
+        shell: pwsh
+        run: |
+          if ("${{ github.event.inputs.version }}" -ne "") {
+            $version = "${{ github.event.inputs.version }}"
+          } else {
+            $projectFile = "${{ env.FOLDER_NAME }}/${{ env.EXTENSION_NAME }}.csproj"
+            [xml]$projectXml = Get-Content $projectFile
+            $version = $projectXml.Project.PropertyGroup.AppxPackageVersion | Select-Object -First 1
+
+            if (-not $version) {
+              $manifestFile = "${{ env.FOLDER_NAME }}/Package.appxmanifest"
+              [xml]$manifestXml = Get-Content $manifestFile
+              $version = $manifestXml.Package.Identity.Version
+            }
+
+            if (-not $version) {
+              throw "Version not found in project file or appxmanifest"
+            }
+          }
+
+          "VERSION=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "Using version: $version"
+
+      - name: Build EXE installers (x64 and arm64)
+        shell: pwsh
+        run: |
+          .\scripts\winget\build-exe.ps1 -ProjectFolder "${{ env.FOLDER_NAME }}" -ExtensionName "${{ env.EXTENSION_NAME }}" -Version "${{ steps.version.outputs.VERSION }}" -Platforms @("x64", "arm64")
+
+      - name: Upload x64 installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.EXTENSION_NAME }}-x64-installer
+          path: ${{ env.FOLDER_NAME }}/bin/Release/installer/*-x64.exe
+          if-no-files-found: error
+
+      - name: Upload arm64 installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.EXTENSION_NAME }}-arm64-installer
+          path: ${{ env.FOLDER_NAME }}/bin/Release/installer/*-arm64.exe
+          if-no-files-found: error
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.EXTENSION_NAME }}-v${{ steps.version.outputs.VERSION }}
+          name: ${{ env.DISPLAY_NAME }} Extension v${{ steps.version.outputs.VERSION }}
+          body: |
+            ## ${{ env.DISPLAY_NAME }} ${{ steps.version.outputs.VERSION }}
+
+            ### What's New
+            ${{ github.event.inputs.release_notes }}
+
+            ### Installation
+            - x64: ${{ env.EXTENSION_NAME }}-Setup-${{ steps.version.outputs.VERSION }}-x64.exe
+            - arm64: ${{ env.EXTENSION_NAME }}-Setup-${{ steps.version.outputs.VERSION }}-arm64.exe
+
+            Repository: ${{ env.GH_REPO_URL }}
+          files: ${{ env.FOLDER_NAME }}/bin/Release/installer/*.exe
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+
+jobs:
+  build-test:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Restore
+        run: dotnet restore PowerPlatformNavigator.sln
+
+      - name: Build (Debug x64)
+        run: dotnet build PowerPlatformNavigator.sln --configuration Debug -p:Platform=x64 --no-restore
+
+      - name: Test (Debug x64)
+        run: dotnet test PowerPlatformNavigator.Tests/PowerPlatformNavigator.Tests.csproj --configuration Debug -p:Platform=x64 --no-build
