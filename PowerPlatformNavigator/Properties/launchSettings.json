@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "PowerPlatformNavigator (Package)": {
+      "commandName": "MsixPackage",
+      "doNotLaunchApp": true
+    },
+    "PowerPlatformNavigator (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
