@@ -1,8 +1,8 @@
 # Power Platform Navigator (PowerToys Command Palette Extension)
 
-Power Platform Navigator is a PowerToys Command Palette extension that helps you quickly open Power Platform environments in the right web destination.
+Power Platform Navigator is a PowerToys Command Palette extension that helps you quickly open Power Platform environments in the right destination.
 
-It discovers environments from Dataverse Discovery, shows them in a searchable list, and opens the selected environment in your browser.
+It discovers environments from the [Global Discovery Service](https://learn.microsoft.com/en-us/power-apps/developer/data-platform/discovery-service), shows them in a searchable list, and opens the selected environment in your browser.
 
 ## What it does
 
