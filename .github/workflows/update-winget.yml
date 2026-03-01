@@ -1,0 +1,85 @@
+name: Update WinGet - PowerPlatformNavigator Extension
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version number (e.g., 0.0.2.0)
+        required: false
+        type: string
+      release_tag:
+        description: Release tag (e.g., PowerPlatformNavigator-v0.0.2.0)
+        required: false
+        type: string
+
+env:
+  EXTENSION_NAME: ${{ vars.EXTENSION_NAME || 'PowerPlatformNavigator' }}
+  GH_USER_NAME: ${{ vars.GH_USER_NAME || 'tompivny' }}
+  GH_REPO: ${{ vars.GH_REPO || 'cmdpal-pp-navigator' }}
+  WINGET_PACKAGE_ID: ${{ vars.WINGET_PACKAGE_ID || 'REPLACE_WITH_WINGET_PACKAGE_ID' }}
+
+jobs:
+  update-winget:
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.release.tag_name, format('{0}-v', env.EXTENSION_NAME))
+    runs-on: windows-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Resolve release info
+        id: release
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch" -and "${{ inputs.version }}" -ne "") {
+            $version = "${{ inputs.version }}"
+            if ("${{ inputs.release_tag }}" -ne "") {
+              $tag = "${{ inputs.release_tag }}"
+            } else {
+              $tag = "${{ env.EXTENSION_NAME }}-v$version"
+            }
+          } elseif ("${{ github.event_name }}" -eq "release") {
+            $tag = "${{ github.event.release.tag_name }}"
+            $version = $tag -replace "^${{ env.EXTENSION_NAME }}-v", ""
+          } else {
+            throw "Unable to resolve release metadata"
+          }
+
+          if (-not $version) { throw "Version is empty" }
+          if (-not $tag) { throw "Tag is empty" }
+
+          "VERSION=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "TAG=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Install wingetcreate
+        shell: pwsh
+        run: iwr https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
+
+      - name: Update WinGet manifest
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.WINGET_GH_TOKEN }}
+        run: |
+          $version = "${{ steps.release.outputs.VERSION }}"
+          $tag = "${{ steps.release.outputs.TAG }}"
+
+          if ("${{ env.WINGET_PACKAGE_ID }}" -eq "REPLACE_WITH_WINGET_PACKAGE_ID") {
+            throw "WINGET_PACKAGE_ID repository variable is not set."
+          }
+
+          $x64Url = "https://github.com/${{ env.GH_USER_NAME }}/${{ env.GH_REPO }}/releases/download/$tag/${{ env.EXTENSION_NAME }}-Setup-$version-x64.exe"
+          $arm64Url = "https://github.com/${{ env.GH_USER_NAME }}/${{ env.GH_REPO }}/releases/download/$tag/${{ env.EXTENSION_NAME }}-Setup-$version-arm64.exe"
+
+          Write-Host "Updating WinGet manifest for version $version"
+          Write-Host "x64 URL: $x64Url"
+          Write-Host "arm64 URL: $arm64Url"
+
+          .\wingetcreate.exe update "${{ env.WINGET_PACKAGE_ID }}" `
+            --version "$version" `
+            --urls "$x64Url|x64" "$arm64Url|arm64" `
+            --token "$env:GITHUB_TOKEN" `
+            --submit
